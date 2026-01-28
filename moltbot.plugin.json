@@ -1,0 +1,64 @@
+{
+  "id": "dingtalk-channel",
+  "name": "DingTalk Channel",
+  "version": "1.0.0",
+  "description": "Custom channel for integrating Moltbot with DingTalk",
+  "author": "Your Name",
+  "license": "MIT",
+  "extensions": {
+    "channels": ["./dist/index.js"]
+  },
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "channels": {
+        "type": "object",
+        "properties": {
+          "dingtalk": {
+            "type": "object",
+            "properties": {
+              "accounts": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean",
+                      "description": "Whether this account is enabled"
+                    },
+                    "webhookUrl": {
+                      "type": "string",
+                      "description": "DingTalk robot webhook URL"
+                    },
+                    "secret": {
+                      "type": "string",
+                      "description": "DingTalk robot signing secret (for security)"
+                    },
+                    "token": {
+                      "type": "string",
+                      "description": "Verification token for webhook"
+                    },
+                    "webhook": {
+                      "type": "object",
+                      "properties": {
+                        "port": {
+                          "type": "integer",
+                          "description": "Port for receiving callbacks"
+                        },
+                        "path": {
+                          "type": "string",
+                          "description": "Path for receiving callbacks"
+                        }
+                      }
+                    }
+                  },
+                  "required": ["webhookUrl"]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
