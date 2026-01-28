@@ -1,6 +1,6 @@
 {
     "name": "moltbot-dingtalk-stream",
-    "version": "1.0.1",
+    "version": "1.0.7",
     "description": "DingTalk channel plugin for Clawdbot (Stream Mode)",
     "main": "index.js",
     "clawdbot": {
