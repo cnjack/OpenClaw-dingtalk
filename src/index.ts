@@ -13,7 +13,7 @@ interface ClawdbotPluginApi {
 
 interface ClawdbotConfig {
   channels?: {
-    dingtalk?: {
+    'moltbot-dingtalk-stream'?: {
       accounts?: {
         [key: string]: DingTalkAccountConfig;
       };
@@ -68,13 +68,13 @@ const activeClients: Map<string, DWClient> = new Map();
 
 // Helper functions
 function listDingTalkAccountIds(cfg: ClawdbotConfig): string[] {
-  const accounts = cfg.channels?.dingtalk?.accounts;
+  const accounts = cfg.channels?.['moltbot-dingtalk-stream']?.accounts;
   return accounts ? Object.keys(accounts) : [];
 }
 
 function resolveDingTalkAccount(opts: { cfg: ClawdbotConfig; accountId?: string }): ResolvedDingTalkAccount {
   const { cfg, accountId = 'default' } = opts;
-  const account = cfg.channels?.dingtalk?.accounts?.[accountId];
+  const account = cfg.channels?.['moltbot-dingtalk-stream']?.accounts?.[accountId];
   return {
     accountId,
     name: account?.name,
@@ -86,12 +86,12 @@ function resolveDingTalkAccount(opts: { cfg: ClawdbotConfig; accountId?: string 
 
 // DingTalk Channel Plugin
 const dingTalkChannelPlugin = {
-  id: "dingtalk",
+  id: "moltbot-dingtalk-stream",
   meta: {
-    id: "dingtalk",
+    id: "moltbot-dingtalk-stream",
     label: "钉钉",
     selectionLabel: "DingTalk Bot (Stream)",
-    docsPath: "/channels/dingtalk",
+    docsPath: "/channels/moltbot-dingtalk-stream",
     docsLabel: "dingtalk",
     blurb: "钉钉机器人通道插件 (Stream模式)",
     order: 100,
@@ -100,14 +100,14 @@ const dingTalkChannelPlugin = {
   capabilities: {
     chatTypes: ["direct", "group"] as const,
   },
-  reload: { configPrefixes: ["channels.dingtalk"] },
+  reload: { configPrefixes: ["channels.moltbot-dingtalk-stream"] },
   configSchema: {
     type: "object" as const,
     properties: {
       channels: {
         type: "object" as const,
         properties: {
-          dingtalk: {
+          'moltbot-dingtalk-stream': {
             type: "object" as const,
             properties: {
               accounts: {
@@ -357,7 +357,7 @@ const dingTalkChannelPlugin = {
 
 // Plugin object format required by Clawdbot
 const plugin = {
-  id: "dingtalk-channel",
+  id: "moltbot-dingtalk-stream",
   name: "DingTalk Channel",
   description: "DingTalk channel plugin using Stream mode",
   configSchema: {

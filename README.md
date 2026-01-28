@@ -14,7 +14,7 @@ A Moltbot channel plugin for DingTalk (钉钉) using **Stream Mode** for seamles
 You can send messages to DingTalk conversations using the Clawdbot CLI. You need the `conversationId` (which you can find in the logs when a message is received).
 
 ```bash
-clawdbot send --channel dingtalk --to <conversationId> "Hello from CLI"
+clawdbot send --channel moltbot-dingtalk-stream --to <conversationId> "Hello from CLI"
 ```
 
 ## Troubleshooting
@@ -34,7 +34,7 @@ clawdbot send --channel dingtalk --to <conversationId> "Hello from CLI"
    ```json
    {
      "channels": {
-       "dingtalk": {
+       "moltbot-dingtalk-stream": {
          "accounts": {
            "default": {
              "enabled": true,

@@ -10,7 +10,7 @@ interface ClawdbotPluginApi {
 }
 interface ClawdbotConfig {
     channels?: {
-        dingtalk?: {
+        'moltbot-dingtalk-stream'?: {
             accounts?: {
                 [key: string]: DingTalkAccountConfig;
             };

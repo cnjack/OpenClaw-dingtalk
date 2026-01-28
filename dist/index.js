@@ -13,12 +13,12 @@ const sessionWebhooks = new Map();
 const activeClients = new Map();
 // Helper functions
 function listDingTalkAccountIds(cfg) {
-    const accounts = cfg.channels?.dingtalk?.accounts;
+    const accounts = cfg.channels?.['moltbot-dingtalk-stream']?.accounts;
     return accounts ? Object.keys(accounts) : [];
 }
 function resolveDingTalkAccount(opts) {
     const { cfg, accountId = 'default' } = opts;
-    const account = cfg.channels?.dingtalk?.accounts?.[accountId];
+    const account = cfg.channels?.['moltbot-dingtalk-stream']?.accounts?.[accountId];
     return {
         accountId,
         name: account?.name,
@@ -29,12 +29,12 @@ function resolveDingTalkAccount(opts) {
 }
 // DingTalk Channel Plugin
 const dingTalkChannelPlugin = {
-    id: "dingtalk",
+    id: "moltbot-dingtalk-stream",
     meta: {
-        id: "dingtalk",
+        id: "moltbot-dingtalk-stream",
         label: "钉钉",
         selectionLabel: "DingTalk Bot (Stream)",
-        docsPath: "/channels/dingtalk",
+        docsPath: "/channels/moltbot-dingtalk-stream",
         docsLabel: "dingtalk",
         blurb: "钉钉机器人通道插件 (Stream模式)",
         order: 100,
@@ -43,14 +43,14 @@ const dingTalkChannelPlugin = {
     capabilities: {
         chatTypes: ["direct", "group"],
     },
-    reload: { configPrefixes: ["channels.dingtalk"] },
+    reload: { configPrefixes: ["channels.moltbot-dingtalk-stream"] },
     configSchema: {
         type: "object",
         properties: {
             channels: {
                 type: "object",
                 properties: {
-                    dingtalk: {
+                    'moltbot-dingtalk-stream': {
                         type: "object",
                         properties: {
                             accounts: {
@@ -277,7 +277,7 @@ const dingTalkChannelPlugin = {
 };
 // Plugin object format required by Clawdbot
 const plugin = {
-    id: "dingtalk-channel",
+    id: "moltbot-dingtalk-stream",
     name: "DingTalk Channel",
     description: "DingTalk channel plugin using Stream mode",
     configSchema: {
