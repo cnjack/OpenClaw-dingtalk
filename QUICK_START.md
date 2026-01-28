@@ -1,73 +1,55 @@
-# Quick Start Guide
+# Quick Start
 
-## 1. Clone and Build the Plugin
+## Prerequisites
 
-```bash
-cd /root/clawd/dingtalk-channel-project
-npm install
-npm run build
-```
+- Node.js 18+
+- A DingTalk developer account
 
-## 2. Test with Your Local Clawdbot
+## Setup
 
-```bash
-clawdbot --config /root/clawd/dingtalk-channel-project/local-test-config.json
-```
+### 1. Create DingTalk App
 
-## 3. Simulate a DingTalk Message (for testing)
+1. Go to [DingTalk Developer Console](https://open.dingtalk.com/)
+2. Create an enterprise internal application
+3. Add **Robot** capability
+4. Select **Stream Mode**
+5. Publish the app
 
-```bash
-curl -X POST http://localhost:3001/dingtalk/callback \
-  -H "Content-Type: application/json" \
-  -H "timestamp: $(date +%s)000" \
-  -d '{
-    "conversationId":"test_convo",
-    "senderStaffId":"test_user", 
-    "senderNick":"Test User",
-    "isAdmin":false,
-    "text":{"content":"Hello Bot"},
-    "msgtype":"text"
-  }'
-```
+### 2. Get Credentials
 
-## 4. Configure Real DingTalk Robot
+From your app settings, copy:
+- **AppKey** → Use as `clientId`
+- **AppSecret** → Use as `clientSecret`
 
-1. Create a custom robot in DingTalk
-2. Get the webhook URL and security settings
-3. Update your Clawdbot configuration:
+### 3. Configure Moltbot
+
+Add to your moltbot config:
 
 ```json
 {
   "channels": {
     "dingtalk": {
       "accounts": {
-        "my_robot": {
+        "default": {
           "enabled": true,
-          "webhook": {
-            "port": 3000,
-            "path": "/dingtalk/callback" 
-          },
-          "webhookUrl": "https://oapi.dingtalk.com/robot/send?access_token=YOUR_ACTUAL_TOKEN",
-          "secret": "YOUR_ACTUAL_SECRET",
-          "token": "YOUR_VERIFY_TOKEN"
+          "clientId": "your-app-key",
+          "clientSecret": "your-app-secret"
         }
-      }
-    }
-  },
-  "plugins": {
-    "entries": {
-      "dingtalk-channel": {
-        "path": "/root/clawd/dingtalk-channel-project/dist/index.js"
       }
     }
   }
 }
 ```
 
-## 5. Restart Clawdbot
+### 4. Install & Run
 
 ```bash
-clawdbot gateway restart
+npm install
+npm run build
 ```
 
-Your DingTalk integration should now be live!
+Then start Moltbot - the plugin will automatically connect to DingTalk via Stream.
+
+## Testing
+
+Send a message to your robot in DingTalk. For group chats, @mention the robot.

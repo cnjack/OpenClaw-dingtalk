@@ -1,0 +1,11 @@
+{
+    "name": "@clawdbot/dingtalk-channel",
+    "version": "2.0.0",
+    "description": "DingTalk channel plugin for Clawdbot (Stream Mode)",
+    "main": "index.js",
+    "clawdbot": {
+        "extensions": [
+            "./index.js"
+        ]
+    }
+}

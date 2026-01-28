@@ -4,13 +4,9 @@
       "accounts": {
         "local_test": {
           "enabled": true,
-          "webhook": {
-            "port": 3001,
-            "path": "/dingtalk/callback"
-          },
-          "webhookUrl": "https://oapi.dingtalk.com/robot/send?access_token=TEST_TOKEN",
-          "secret": "TEST_SECRET",
-          "token": "TEST_TOKEN"
+          "clientId": "YOUR_APP_KEY_HERE",
+          "clientSecret": "YOUR_APP_SECRET_HERE",
+          "webhookUrl": ""
         }
       }
     }
@@ -18,7 +14,7 @@
   "plugins": {
     "entries": {
       "dingtalk-channel": {
-        "path": "/root/clawd/dingtalk-channel-project/dist/index.js"
+        "path": "./dist/index.js"
       }
     }
   }

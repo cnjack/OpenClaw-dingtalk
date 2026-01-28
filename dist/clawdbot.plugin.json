@@ -1,0 +1,19 @@
+{
+    "id": "dingtalk-channel",
+    "name": "DingTalk Channel",
+    "version": "2.0.0",
+    "description": "Custom channel for integrating Clawdbot with DingTalk (Stream Mode)",
+    "author": "Your Name",
+    "license": "MIT",
+    "extensions": [
+        "./index.js"
+    ],
+    "channels": [
+        "dingtalk"
+    ],
+    "configSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+    }
+}

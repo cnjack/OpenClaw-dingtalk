@@ -4,79 +4,28 @@ This document provides detailed information about developing and testing the Din
 
 ## Architecture
 
-The plugin consists of two main components:
+The plugin uses **DingTalk Stream Mode** to receive messages via WebSocket, eliminating the need for public IPs, webhooks, or ngrok.
+
+### Components
 
 1. **Channel Component**: Handles outgoing messages (from Moltbot to DingTalk)
-2. **Gateway Component**: Handles incoming messages (from DingTalk to Moltbot)
+2. **Service Component**: Maintains WebSocket connection to receive incoming messages
 
-### Channel Component
+### Stream Mode Benefits
 
-The channel component implements the following interface:
+- **Zero public IP**: No need to expose your server to the internet
+- **Zero webhook setup**: Uses outbound WebSocket connection
+- **Zero firewall config**: Only requires outbound network access
+- **Zero ngrok/tunneling**: Works directly in local development
 
-- `id`: Unique identifier for the channel ("dingtalk")
-- `meta`: Metadata displayed in UI
-- `capabilities`: Defines what the channel supports
-- `config`: Functions to manage account configurations
-- `outbound`: Functions to send messages out
+## Configuration
 
-### Gateway Component
+### Required Credentials
 
-The gateway component handles the HTTP server that receives webhook callbacks from DingTalk:
+You'll need to obtain from [DingTalk Developer Console](https://open.dingtalk.com/):
 
-- Starts an Express server to listen for incoming messages
-- Validates security signatures and tokens
-- Parses incoming messages and forwards them to Moltbot
-- Manages server lifecycle
-
-## Security Features
-
-### Signature Verification
-
-The plugin supports DingTalk's signature verification mechanism:
-- Verifies the `timestamp` and `sign` headers against the configured secret
-- Rejects unauthorized requests
-
-### Token Verification
-
-Optionally verifies the configured token against header/query parameters
-
-## Message Processing Flow
-
-### Incoming Messages (DingTalk → Moltbot)
-
-1. DingTalk sends a webhook request to the configured endpoint
-2. Plugin validates security credentials (signature/token)
-3. Plugin parses the message body to extract:
-   - Conversation ID (for thread identification)
-   - Sender ID (for user identification)
-   - Message content (text content)
-4. Plugin cleans the message (removes @mentions)
-5. Plugin forwards the message to Moltbot via `api.postMessage`
-6. Plugin responds to DingTalk with success confirmation
-
-### Outgoing Messages (Moltbot → DingTalk)
-
-1. Moltbot calls the `sendText` function with message content
-2. Plugin retrieves account configuration (webhook URL, secret)
-3. If secret is configured, adds signature parameters to URL
-4. Sends HTTP POST request to DingTalk webhook endpoint
-5. Returns success/error status
-
-## Testing Locally
-
-### Prerequisites
-
-- Node.js 18+ installed
-- A running instance of Moltbot/Clawdbot
-- A test DingTalk robot (for integration testing)
-
-### Setup Steps
-
-1. Clone or download this repository
-2. Install dependencies: `npm install`
-3. Build the plugin: `npm run build`
-4. Configure your Moltbot instance to use this plugin
-5. Start your Moltbot instance
+- **ClientID (AppKey)**: Your application's client identifier
+- **ClientSecret (AppSecret)**: Your application's secret key
 
 ### Configuration Example
 
@@ -85,54 +34,106 @@ Optionally verifies the configured token against header/query parameters
   "channels": {
     "dingtalk": {
       "accounts": {
-        "test": {
+        "default": {
           "enabled": true,
-          "webhook": {
-            "port": 3000,
-            "path": "/dingtalk/callback"
-          },
-          "webhookUrl": "https://oapi.dingtalk.com/robot/send?access_token=YOUR_TOKEN",
-          "secret": "YOUR_SIGNING_SECRET",
-          "token": "YOUR_VERIFICATION_TOKEN"
+          "clientId": "YOUR_APP_KEY",
+          "clientSecret": "YOUR_APP_SECRET",
+          "webhookUrl": "https://oapi.dingtalk.com/robot/send?access_token=..." 
         }
-      }
-    }
-  },
-  "plugins": {
-    "entries": {
-      "dingtalk-channel": {
-        "path": "/path/to/this/plugin/dist/index.js"
       }
     }
   }
 }
 ```
 
-## Deployment Considerations
+> **Note**: `webhookUrl` is optional and only needed for proactive messages (not replies).
 
-### Public Access
+## DingTalk App Setup
 
-Since DingTalk needs to send HTTP requests to your server, ensure:
-- Your server is accessible from the internet
-- The configured port is open and not blocked by firewall
-- Use HTTPS in production for security
+### 1. Create Enterprise Internal App
 
-### Security
+1. Go to [DingTalk Developer Console](https://open.dingtalk.com/)
+2. Create a new enterprise internal application
+3. Note your ClientID (AppKey) and ClientSecret (AppSecret)
 
-- Always configure and use the signing secret
-- Rotate secrets regularly
-- Monitor logs for unauthorized access attempts
+### 2. Enable Robot Capability
+
+1. In your app settings, go to **Application Capabilities** → **Add Capability**
+2. Select **Robot**
+3. Fill in robot information
+4. **Important**: Select **Stream Mode** (not HTTP mode)
+5. Publish the robot
+
+### 3. Configure Permissions
+
+Ensure your app has the necessary permissions:
+- Robot message sending/receiving permissions
+- Any other permissions your bot requires
+
+## Message Flow
+
+### Incoming Messages (DingTalk → Moltbot)
+
+1. DingTalk sends message via WebSocket (Stream mode)
+2. Plugin receives message in callback handler
+3. Plugin extracts sender info, conversation ID, and content
+4. Plugin forwards to Moltbot via `api.postMessage`
+5. Plugin acknowledges message to DingTalk
+
+### Outgoing Messages (Moltbot → DingTalk)
+
+1. Moltbot calls `sendText` with response
+2. Plugin uses **session webhook** from incoming message (for replies)
+3. Or uses configured `webhookUrl` (for proactive messages)
+4. Returns success/error status
+
+## Testing Locally
+
+### Prerequisites
+
+- Node.js 18+ installed
+- DingTalk developer account with an internal app
+- App configured with Stream mode robot
+
+### Setup Steps
+
+1. Clone this repository
+2. Install dependencies: `npm install`
+3. Build the plugin: `npm run build`
+4. Configure with your credentials
+5. Run with Moltbot
+
+### Testing Commands
+
+```bash
+# Install dependencies
+npm install
+
+# Build
+npm run build
+
+# Run tests
+node test-plugin.js
+```
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Webhook not receiving messages**: Check that your server is publicly accessible and the port/path are correctly configured
-2. **Signature validation failures**: Verify that the secret matches what's configured in DingTalk
-3. **Messages not appearing in Moltbot**: Check Moltbot logs for processing errors
+1. **Connection fails**: Verify clientId and clientSecret are correct
+2. **No messages received**: Check that Stream mode is enabled in DingTalk console
+3. **Reply fails**: Ensure session webhook hasn't expired (valid for ~2 hours)
 
-### Debugging Tips
+### Debug Logging
 
-- Enable verbose logging in Moltbot to see incoming/outgoing messages
-- Use tools like ngrok for local development to expose your server publicly
-- Check DingTalk's callback error logs in the DingTalk developer console
+Enable verbose logging in Moltbot to see connection status and message flow:
+- Check Moltbot logs at `~/.clawdbot/logs/`
+
+## Migration from Webhook Mode
+
+If upgrading from the previous webhook-based version:
+
+1. Update your config to use `clientId`/`clientSecret` instead of `webhookUrl`/`secret`
+2. Enable Stream mode in DingTalk developer console for your app
+3. Remove any ngrok/webhook server setup
+4. Rebuild and restart

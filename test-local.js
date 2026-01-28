@@ -10,7 +10,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-console.log('🧪 Testing DingTalk Plugin with Local Clawdbot\n');
+console.log('🧪 Testing DingTalk Plugin (Stream Mode)\n');
 
 // Check if the plugin built successfully
 const distDir = path.join(__dirname, 'dist');
@@ -30,9 +30,9 @@ console.log('✅ Plugin built successfully');
 // Check if Clawdbot is available
 try {
   execSync('which clawdbot', { stdio: 'pipe' });
-  console.log('✅ Clawdbot is available');
+  console.log('✅ Clawdbot/Moltbot is available');
 } catch (error) {
-  console.log('⚠️  Clawdbot not found, but that\'s OK - you can still install manually');
+  console.log('⚠️  Clawdbot/Moltbot not found, but you can still install manually');
 }
 
 // Create a sample configuration for testing
@@ -42,13 +42,8 @@ const testConfig = {
       accounts: {
         local_test: {
           enabled: true,
-          webhook: {
-            port: 3001,  // Using different port to avoid conflicts
-            path: "/dingtalk/callback"
-          },
-          webhookUrl: "https://oapi.dingtalk.com/robot/send?access_token=TEST_TOKEN",
-          secret: "TEST_SECRET",
-          token: "TEST_TOKEN"
+          clientId: "YOUR_APP_KEY_HERE",
+          clientSecret: "YOUR_APP_SECRET_HERE"
         }
       }
     }
@@ -69,32 +64,27 @@ console.log(`✅ Created test configuration at ${configPath}`);
 // Provide instructions
 console.log('\n📋 Testing Instructions:\n');
 
-console.log('1. First, ensure your plugin is built:');
-console.log('   cd /root/clawd/dingtalk-channel-project');
-console.log('   npm run build\n');
+console.log('1. Set up your DingTalk app:');
+console.log('   - Go to https://open.dingtalk.com/');
+console.log('   - Create an enterprise internal app');
+console.log('   - Add Robot capability with Stream Mode enabled');
+console.log('   - Get your AppKey (clientId) and AppSecret (clientSecret)\n');
 
-console.log('2. To test with your local Clawdbot, you have two options:\n');
+console.log('2. Update the test config:');
+console.log(`   - Edit ${configPath}`);
+console.log('   - Replace YOUR_APP_KEY_HERE with your AppKey');
+console.log('   - Replace YOUR_APP_SECRET_HERE with your AppSecret\n');
 
-console.log('   Option A - Direct config modification:');
-console.log('   - Copy the plugin path to your Clawdbot config (~/.clawdbot/clawdbot.json)');
-console.log('   - Add the plugin entry and DingTalk channel config');
-console.log('   - Restart Clawdbot\n');
+console.log('3. Build and test:');
+console.log('   npm run build');
+console.log(`   clawdbot --config ${configPath}\n`);
 
-console.log('   Option B - Temporary test (recommended):');
-console.log('   - Run Clawdbot with custom config:');
-console.log(`     clawdbot --config ${configPath}`);
-console.log('   - Or run with the temporary config:\n');
+console.log('4. Test by sending a message to your robot in DingTalk.');
+console.log('   For group chats, @mention the robot.\n');
 
-console.log('3. To simulate a DingTalk webhook (for testing):');
-console.log('   curl -X POST http://localhost:3001/dingtalk/callback \\');
-console.log('     -H "Content-Type: application/json" \\');
-console.log('     -d \'{"conversationId":"test_convo","senderStaffId":"test_user","senderNick":"Test User","isAdmin":false,"text":{"content":"Hello Bot"},"msgtype":"text"}\'\n');
+console.log('💡 Tips:');
+console.log('- No ngrok or public IP needed! Stream mode connects outbound.');
+console.log('- Check Clawdbot logs at ~/.clawdbot/logs/ for debugging');
+console.log('- Session webhooks for replies expire after ~2 hours');
 
-console.log('4. Check Clawdbot logs for incoming messages and responses.\n');
-
-console.log('💡 Pro Tips:');
-console.log('- Use a service like ngrok to expose your local server to the internet for real DingTalk testing');
-console.log('- Check the Clawdbot logs in ~/.clawdbot/logs/ for debugging');
-console.log('- Remember to use real webhook URLs and secrets when testing with actual DingTalk');
-
-console.log('\n🚀 You\'re ready to test your DingTalk plugin!');
+console.log('\n🚀 You\'re ready to test your DingTalk Stream plugin!');

@@ -1,12 +1,14 @@
 {
   "id": "dingtalk-channel",
   "name": "DingTalk Channel",
-  "version": "1.0.0",
-  "description": "Custom channel for integrating Moltbot with DingTalk",
+  "version": "2.0.0",
+  "description": "Custom channel for integrating Moltbot with DingTalk (Stream Mode)",
   "author": "Your Name",
   "license": "MIT",
   "extensions": {
-    "channels": ["./dist/index.js"]
+    "channels": [
+      "./dist/index.js"
+    ]
   },
   "configSchema": {
     "type": "object",
@@ -26,33 +28,23 @@
                       "type": "boolean",
                       "description": "Whether this account is enabled"
                     },
+                    "clientId": {
+                      "type": "string",
+                      "description": "AppKey from DingTalk developer console"
+                    },
+                    "clientSecret": {
+                      "type": "string",
+                      "description": "AppSecret from DingTalk developer console"
+                    },
                     "webhookUrl": {
                       "type": "string",
-                      "description": "DingTalk robot webhook URL"
-                    },
-                    "secret": {
-                      "type": "string",
-                      "description": "DingTalk robot signing secret (for security)"
-                    },
-                    "token": {
-                      "type": "string",
-                      "description": "Verification token for webhook"
-                    },
-                    "webhook": {
-                      "type": "object",
-                      "properties": {
-                        "port": {
-                          "type": "integer",
-                          "description": "Port for receiving callbacks"
-                        },
-                        "path": {
-                          "type": "string",
-                          "description": "Path for receiving callbacks"
-                        }
-                      }
+                      "description": "Optional webhook URL for proactive messages"
                     }
                   },
-                  "required": ["webhookUrl"]
+                  "required": [
+                    "clientId",
+                    "clientSecret"
+                  ]
                 }
               }
             }

@@ -3,172 +3,293 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = registerDingTalkPlugin;
+const dingtalk_stream_1 = require("dingtalk-stream");
 const axios_1 = __importDefault(require("axios"));
-const express_1 = __importDefault(require("express"));
-const crypto_1 = __importDefault(require("crypto"));
-const dingTalkChannel = {
+// Store plugin runtime
+let pluginRuntime = null;
+// Store session webhooks for reply
+const sessionWebhooks = new Map();
+// Store active clients for each account
+const activeClients = new Map();
+// Helper functions
+function listDingTalkAccountIds(cfg) {
+    const accounts = cfg.channels?.dingtalk?.accounts;
+    return accounts ? Object.keys(accounts) : [];
+}
+function resolveDingTalkAccount(opts) {
+    const { cfg, accountId = 'default' } = opts;
+    const account = cfg.channels?.dingtalk?.accounts?.[accountId];
+    return {
+        accountId,
+        name: account?.name,
+        enabled: account?.enabled ?? false,
+        configured: Boolean(account?.clientId && account?.clientSecret),
+        config: account || { clientId: '', clientSecret: '' }
+    };
+}
+// DingTalk Channel Plugin
+const dingTalkChannelPlugin = {
     id: "dingtalk",
     meta: {
         id: "dingtalk",
         label: "钉钉",
-        selectionLabel: "DingTalk Bot",
+        selectionLabel: "DingTalk Bot (Stream)",
         docsPath: "/channels/dingtalk",
-        blurb: "钉钉自定义机器人通道插件"
+        docsLabel: "dingtalk",
+        blurb: "钉钉机器人通道插件 (Stream模式)",
+        order: 100,
+        aliases: ["dt", "ding"],
     },
     capabilities: {
         chatTypes: ["direct", "group"],
-        features: ["text", "reactions"]
+    },
+    reload: { configPrefixes: ["channels.dingtalk"] },
+    configSchema: {
+        type: "object",
+        properties: {
+            channels: {
+                type: "object",
+                properties: {
+                    dingtalk: {
+                        type: "object",
+                        properties: {
+                            accounts: {
+                                type: "object",
+                                additionalProperties: {
+                                    type: "object",
+                                    properties: {
+                                        enabled: { type: "boolean" },
+                                        clientId: { type: "string" },
+                                        clientSecret: { type: "string" },
+                                        webhookUrl: { type: "string" },
+                                        name: { type: "string" },
+                                    },
+                                    required: ["clientId", "clientSecret"],
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
     },
     config: {
-        listAccountIds: (cfg) => {
-            const accounts = cfg.channels?.dingtalk?.accounts;
-            return accounts ? Object.keys(accounts) : [];
+        listAccountIds: (cfg) => listDingTalkAccountIds(cfg),
+        resolveAccount: (cfg, accountId) => resolveDingTalkAccount({ cfg, accountId }),
+        defaultAccountId: (_cfg) => 'default',
+        isConfigured: (account) => account.configured,
+        describeAccount: (account) => ({
+            accountId: account.accountId,
+            name: account.name,
+            enabled: account.enabled,
+            configured: account.configured,
+        }),
+    },
+    gateway: {
+        startAccount: async (ctx) => {
+            const account = ctx.account;
+            const config = account.config;
+            const accountId = account.accountId;
+            if (!config.clientId || !config.clientSecret) {
+                ctx.log?.warn?.(`[${accountId}] missing clientId or clientSecret`);
+                return;
+            }
+            ctx.log?.info?.(`[${accountId}] starting DingTalk Stream client`);
+            try {
+                const client = new dingtalk_stream_1.DWClient({
+                    clientId: config.clientId,
+                    clientSecret: config.clientSecret,
+                });
+                // Helper to safely handle messages
+                const handleMessage = async (res) => {
+                    try {
+                        const message = JSON.parse(res.data);
+                        const textContent = message.text?.content || "";
+                        const senderId = message.senderId;
+                        const convoId = message.conversationId;
+                        const msgId = message.msgId;
+                        // Store session webhook if provided (DingTalk Stream mode provides this for replies)
+                        if (message.sessionWebhook) {
+                            sessionWebhooks.set(convoId, message.sessionWebhook);
+                        }
+                        // Log reception
+                        ctx.log?.info?.(`[${accountId}] received message from ${message.senderNick || senderId}: ${textContent}`);
+                        // Filter out empty messages
+                        if (!textContent)
+                            return;
+                        // Simple text cleaning (remove @bot mentions if possible, though DingTalk usually gives clean content or we might need to parse entities)
+                        const cleanedText = textContent.replace(/@\w+\s*/g, '').trim();
+                        // Forward the message to Clawdbot for processing
+                        if (pluginRuntime?.runtime?.channel?.reply) {
+                            const replyModule = pluginRuntime.runtime.channel.reply;
+                            const chatType = String(message.conversationType) === '2' ? 'group' : 'direct';
+                            const fromAddress = chatType === 'group' ? `dingtalk:group:${convoId}` : `dingtalk:${senderId}`;
+                            const ctxPayload = {
+                                Body: cleanedText,
+                                RawBody: textContent,
+                                CommandBody: cleanedText,
+                                From: fromAddress,
+                                To: 'bot',
+                                SessionKey: `dingtalk:${convoId}`,
+                                AccountId: accountId,
+                                ChatType: chatType,
+                                SenderName: message.senderNick,
+                                SenderId: senderId,
+                                Provider: 'dingtalk',
+                                Surface: 'dingtalk',
+                                MessageSid: message.msgId,
+                                Timestamp: message.createAt,
+                                // Required for some logic
+                                GroupSubject: chatType === 'group' ? (message.conversationId) : undefined,
+                            };
+                            const finalizedCtx = replyModule.finalizeInboundContext(ctxPayload);
+                            let replyBuffer = "";
+                            let replySent = false;
+                            const sendToDingTalk = async (text) => {
+                                if (!text)
+                                    return;
+                                if (replySent) {
+                                    ctx.log?.info?.(`[${accountId}] Reply already sent, skipping buffer flush.`);
+                                    return;
+                                }
+                                const replyWebhook = sessionWebhooks.get(convoId) || config.webhookUrl;
+                                if (!replyWebhook) {
+                                    ctx.log?.error?.(`[${accountId}] No webhook to reply to ${convoId}`);
+                                    return;
+                                }
+                                try {
+                                    console.log(`[DingTalk] Sending reply to webhook: ${replyWebhook} Content: ${text.substring(0, 20)}...`);
+                                    await axios_1.default.post(replyWebhook, {
+                                        msgtype: "text",
+                                        text: { content: text }
+                                    }, { headers: { 'Content-Type': 'application/json' } });
+                                    replySent = true;
+                                    ctx.log?.info?.(`[${accountId}] Reply sent successfully.`);
+                                }
+                                catch (e) {
+                                    ctx.log?.error?.(`[${accountId}] Failed to send reply: ${e}`);
+                                }
+                            };
+                            const dispatcher = {
+                                sendFinalReply: (payload) => {
+                                    const text = payload.text || payload.content || '';
+                                    ctx.log?.info?.(`[${accountId}] sendFinalReply called. Text length: ${text?.length}`);
+                                    sendToDingTalk(text).catch(e => ctx.log?.error?.(`[${accountId}] sendToDingTalk failed: ${e}`));
+                                    return true;
+                                },
+                                typing: async () => { },
+                                reaction: async () => { },
+                                isSynchronous: () => false,
+                                waitForIdle: async () => { },
+                                sendBlockReply: async (block) => {
+                                    // Accumulate text from blocks
+                                    const text = block.text || block.delta || block.content || '';
+                                    if (text) {
+                                        replyBuffer += text;
+                                    }
+                                },
+                                getQueuedCounts: () => ({ active: 0, queued: 0, final: 0 })
+                            };
+                            // Internal dispatch
+                            const dispatchPromise = replyModule.dispatchReplyFromConfig({
+                                ctx: finalizedCtx,
+                                cfg: pluginRuntime.config,
+                                dispatcher: dispatcher,
+                                replyOptions: {}
+                            });
+                            // ACK immediately to prevent retries
+                            if (res.headers && res.headers.messageId) {
+                                client.socketCallBackResponse(res.headers.messageId, { status: "SUCCEED" });
+                            }
+                            // Wait for run to finish
+                            await dispatchPromise;
+                            // If final reply wasn't called but we have buffer (streaming case where agent didn't return final payload?)
+                            if (!replySent && replyBuffer) {
+                                console.log(`[DingTalk] sending accumulated buffer from blocks.`);
+                                await sendToDingTalk(replyBuffer);
+                            }
+                        }
+                        else {
+                            ctx.log?.error?.(`[${accountId}] runtime.channel.reply not available`);
+                        }
+                    }
+                    catch (error) {
+                        ctx.log?.error?.(`[${accountId}] error processing message: ${error instanceof Error ? error.message : String(error)}`);
+                        console.error('DingTalk Handler Error:', error);
+                    }
+                };
+                // Register callback for robot messages
+                client.registerCallbackListener('/v1.0/im/bot/messages/get', handleMessage);
+                // Connect to DingTalk Stream
+                await client.connect();
+                activeClients.set(accountId, client);
+                ctx.log?.info?.(`[${accountId}] DingTalk Stream client connected`);
+                // Handle abort signal for cleanup
+                ctx.abortSignal?.addEventListener('abort', () => {
+                    ctx.log?.info?.(`[${accountId}] stopping DingTalk Stream client`);
+                    client.disconnect();
+                    activeClients.delete(accountId);
+                });
+            }
+            catch (error) {
+                ctx.log?.error?.(`[${accountId}] failed to start: ${error instanceof Error ? error.message : String(error)}`);
+                throw error;
+            }
         },
-        resolveAccount: (cfg, accountId) => {
-            const account = cfg.channels?.dingtalk?.accounts?.[accountId];
-            return {
-                id: accountId,
-                config: account
-            };
-        }
     },
     outbound: {
         deliveryMode: "direct",
-        sendText: async ({ text, account, convoId, senderId }) => {
+        sendText: async (opts) => {
+            const { text, account, target } = opts;
             const config = account.config;
-            if (!config.webhookUrl) {
-                return { ok: false, error: "Missing webhook URL" };
-            }
-            try {
-                // Prepare the message payload
-                const messagePayload = {
-                    msgtype: "text",
-                    text: {
-                        content: text
-                    }
-                };
-                let url = config.webhookUrl;
-                // If secret is provided, add signature for security
-                if (config.secret) {
-                    const timestamp = Date.now();
-                    const base = `${timestamp}\n${config.secret}`;
-                    const sign = crypto_1.default
-                        .createHmac('sha256', config.secret)
-                        .update(base)
-                        .digest('base64');
-                    url = `${config.webhookUrl}&timestamp=${timestamp}&sign=${sign}`;
+            // Try session webhook first (for replies)
+            const sessionWebhook = sessionWebhooks.get(target);
+            if (sessionWebhook) {
+                try {
+                    await axios_1.default.post(sessionWebhook, {
+                        msgtype: "text",
+                        text: { content: text }
+                    }, {
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    return { ok: true };
                 }
-                // Send the message to DingTalk
-                await axios_1.default.post(url, messagePayload, {
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                return { ok: true };
+                catch (error) {
+                    // Fall through to webhookUrl
+                }
             }
-            catch (error) {
-                console.error('Error sending message to DingTalk:', error);
-                return { ok: false, error: error instanceof Error ? error.message : String(error) };
+            // Fallback to webhookUrl for proactive messages
+            if (config?.webhookUrl) {
+                try {
+                    await axios_1.default.post(config.webhookUrl, {
+                        msgtype: "text",
+                        text: { content: text }
+                    }, {
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    return { ok: true };
+                }
+                catch (error) {
+                    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+                }
             }
+            return { ok: false, error: "No webhook available for sending messages" };
         }
     }
 };
-// Gateway plugin to handle incoming messages
-const dingTalkGateway = {
-    async start(api) {
-        const app = (0, express_1.default)();
-        app.use(express_1.default.json());
-        // Get the channel config
-        const config = api.config;
-        const accounts = config.channels?.dingtalk?.accounts || {};
-        for (const [accountId, accountConfig] of Object.entries(accounts)) {
-            if (accountConfig.enabled && accountConfig.webhook) {
-                const webhookConfig = accountConfig.webhook;
-                const token = accountConfig.token;
-                const secret = accountConfig.secret;
-                const callbackPath = webhookConfig.path || '/dingtalk/callback';
-                const callbackPort = webhookConfig.port || 3000;
-                api.logger.info(`Setting up DingTalk webhook for account ${accountId} on port ${callbackPort}${callbackPath}`);
-                app.post(callbackPath, async (req, res) => {
-                    try {
-                        // Verify the request if token is configured
-                        if (token) {
-                            // Basic token verification - some implementations put token in headers
-                            const receivedToken = req.headers['token'] || req.query.token;
-                            if (receivedToken !== token) {
-                                api.logger.warn('Invalid token received for DingTalk webhook');
-                                res.status(403).send('Forbidden: Invalid token');
-                                return;
-                            }
-                        }
-                        // If secret is configured, verify the signature
-                        if (secret) {
-                            const timestamp = req.headers['timestamp'];
-                            const sign = req.headers['sign'];
-                            if (!timestamp || !sign) {
-                                api.logger.warn('Missing timestamp or sign in DingTalk webhook headers');
-                                res.status(403).send('Forbidden: Missing signature');
-                                return;
-                            }
-                            // Recalculate the expected signature
-                            const expectedSign = crypto_1.default
-                                .createHmac('sha256', secret)
-                                .update(`${timestamp}\n${secret}`)
-                                .digest('base64');
-                            if (sign !== expectedSign) {
-                                api.logger.warn('Invalid signature received for DingTalk webhook');
-                                res.status(403).send('Forbidden: Invalid signature');
-                                return;
-                            }
-                        }
-                        // Parse the received message
-                        const data = req.body;
-                        api.logger.info(`Received DingTalk message: ${JSON.stringify(data)}`);
-                        // Extract message information
-                        const textContent = data.text?.content || '';
-                        const senderId = data.senderStaffId || data.senderId || 'unknown';
-                        const convoId = data.conversationId || 'default';
-                        // Clean up the message content - remove @mentions of the bot if present
-                        const cleanedText = textContent.replace(/@\w+\s*/g, '').trim();
-                        // Forward the message to Moltbot for processing
-                        await api.postMessage({
-                            channel: 'dingtalk',
-                            accountId: accountId,
-                            senderId: senderId,
-                            chatId: convoId,
-                            text: cleanedText
-                        });
-                        // Respond to DingTalk that the message was received
-                        res.send({ success: true });
-                    }
-                    catch (error) {
-                        api.logger.error(`Error processing DingTalk webhook: ${error instanceof Error ? error.message : String(error)}`);
-                        res.status(500).send('Internal Server Error');
-                    }
-                });
-            }
-        }
-        // Start the server
-        const server = app.listen(3000);
-        // Store the server instance to allow cleanup
-        api._dingtalkServer = server;
+// Plugin object format required by Clawdbot
+const plugin = {
+    id: "dingtalk-channel",
+    name: "DingTalk Channel",
+    description: "DingTalk channel plugin using Stream mode",
+    configSchema: {
+        type: "object",
+        properties: {}
     },
-    async stop(api) {
-        // Cleanup: close the server if it exists
-        const server = api._dingtalkServer;
-        if (server) {
-            server.close();
-        }
+    register(api) {
+        pluginRuntime = api;
+        api.registerChannel({ plugin: dingTalkChannelPlugin });
     }
 };
-// Export the plugin registration function
-function registerDingTalkPlugin(api) {
-    if (api && typeof api.registerChannel === 'function') {
-        api.registerChannel(dingTalkChannel);
-    }
-    if (api && typeof api.registerGatewayPlugin === 'function') {
-        api.registerGatewayPlugin(dingTalkGateway);
-    }
-}
+exports.default = plugin;
 //# sourceMappingURL=index.js.map
