@@ -41,7 +41,7 @@ export interface DingTalkChannelConfig {
     verboseLevel?: VerboseLevel;
     accounts?: Record<string, DingTalkAccountConfig>;
 }
-export interface ClawdbotConfig {
+export interface OpenClawConfig {
     channels?: {
         [CHANNEL_ID]?: DingTalkChannelConfig;
         defaults?: {
@@ -125,25 +125,25 @@ export declare const DingTalkConfigSchema: {
         };
     };
 };
-export declare function listDingTalkAccountIds(cfg: ClawdbotConfig): string[];
+export declare function listDingTalkAccountIds(cfg: OpenClawConfig): string[];
 export declare function resolveDingTalkAccount(opts: {
-    cfg: ClawdbotConfig;
+    cfg: OpenClawConfig;
     accountId?: string;
 }): ResolvedDingTalkAccount;
-export declare function resolveDefaultDingTalkAccountId(cfg: ClawdbotConfig): string;
+export declare function resolveDefaultDingTalkAccountId(cfg: OpenClawConfig): string;
 export declare function normalizeAccountId(accountId?: string): string;
 export declare function setAccountEnabledInConfig(opts: {
-    cfg: ClawdbotConfig;
+    cfg: OpenClawConfig;
     accountId: string;
     enabled: boolean;
-}): ClawdbotConfig;
+}): OpenClawConfig;
 export declare function deleteAccountFromConfig(opts: {
-    cfg: ClawdbotConfig;
+    cfg: OpenClawConfig;
     accountId: string;
-}): ClawdbotConfig;
+}): OpenClawConfig;
 export declare function applyAccountNameToConfig(opts: {
-    cfg: ClawdbotConfig;
+    cfg: OpenClawConfig;
     accountId: string;
     name?: string;
-}): ClawdbotConfig;
+}): OpenClawConfig;
 //# sourceMappingURL=schema.d.ts.map

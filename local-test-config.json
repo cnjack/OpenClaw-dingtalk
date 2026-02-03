@@ -1,12 +1,14 @@
 {
   "channels": {
-    "dingtalk": {
+    "moltbot-dingtalk-stream": {
+      "verboseLevel": "on",
       "accounts": {
-        "local_test": {
+        "default": {
           "enabled": true,
           "clientId": "YOUR_APP_KEY_HERE",
           "clientSecret": "YOUR_APP_SECRET_HERE",
-          "webhookUrl": ""
+          "webhookUrl": "",
+          "verboseLevel": "on"
         }
       }
     }

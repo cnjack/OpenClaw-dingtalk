@@ -1,9 +1,9 @@
 {
   "name": "moltbot-dingtalk-stream",
-  "version": "1.0.8",
-  "description": "DingTalk custom channel plugin for Moltbot/Clawdbot",
+  "version": "1.0.9",
+  "description": "DingTalk custom channel plugin for Moltbot/OpenClaw",
   "main": "dist/index.js",
-  "clawdbot": {
+  "openclaw": {
     "extensions": [
       "./dist/index.js"
     ]
@@ -16,7 +16,7 @@
   },
   "keywords": [
     "moltbot",
-    "clawdbot",
+    "openclaw",
     "plugin",
     "dingtalk",
     "channel",
@@ -26,7 +26,6 @@
   "license": "MIT",
   "dependencies": {
     "axios": "^1.6.0",
-    "clawdbot": "^2026.1.24",
     "dingtalk-stream": "^2.1.4"
   },
   "devDependencies": {

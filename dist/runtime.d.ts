@@ -1,5 +1,5 @@
 import { DWClient } from "dingtalk-stream";
-export interface ClawdbotCoreRuntime {
+export interface OpenClawCoreRuntime {
     channel: {
         routing: {
             resolveAgentRoute: (opts: {

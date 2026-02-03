@@ -1,6 +1,6 @@
-# DingTalk Channel for Clawdbot
+# DingTalk Channel for OpenClaw
 
-A Clawdbot channel plugin for DingTalk (钉钉) using **Stream Mode** for seamless integration.
+An OpenClaw channel plugin for DingTalk (钉钉) using **Stream Mode** for seamless integration.
 
 ## Features
 
@@ -15,7 +15,7 @@ A Clawdbot channel plugin for DingTalk (钉钉) using **Stream Mode** for seamle
 
 ### Option 1: From npm (recommended)
 ```bash
-clawdbot plugins install moltbot-dingtalk-stream
+openclaw plugins install moltbot-dingtalk-stream
 ```
 
 ### Option 2: Manual installation
@@ -23,13 +23,13 @@ clawdbot plugins install moltbot-dingtalk-stream
 git clone https://github.com/your-repo/moltbot-dingtalk-stream.git
 cd moltbot-dingtalk-stream
 npm install && npm run build
-cp -r . ~/.clawdbot/extensions/moltbot-dingtalk-stream
-clawdbot gateway restart
+cp -r . ~/.openclaw/extensions/moltbot-dingtalk-stream
+openclaw gateway restart
 ```
 
 ## Configuration
 
-Configure in your `~/.clawdbot/clawdbot.json`:
+Configure in your `~/.openclaw/openclaw.json`:
 
 ```json
 {
@@ -84,11 +84,11 @@ export DINGTALK_CLIENT_SECRET="YOUR_APP_SECRET"
 
 ## Proactive Messaging (CLI)
 
-Send messages to DingTalk conversations using the Clawdbot CLI:
+Send messages to DingTalk conversations using the OpenClaw CLI:
 
 ```bash
 # Send to a specific conversation
-clawdbot send --channel moltbot-dingtalk-stream --to <conversationId> "Hello from CLI"
+openclaw send --channel moltbot-dingtalk-stream --to <conversationId> "Hello from CLI"
 
 # The conversationId can be found in logs when a message is received
 ```
@@ -105,7 +105,7 @@ clawdbot send --channel moltbot-dingtalk-stream --to <conversationId> "Hello fro
 ### Debug Logs
 
 ```bash
-clawdbot logs --follow
+openclaw logs --follow
 ```
 
 Look for `[default] DingTalk Stream client connected` to confirm connection.
@@ -114,13 +114,13 @@ Look for `[default] DingTalk Stream client connected` to confirm connection.
 
 ```
 ┌─────────────────┐     WebSocket      ┌──────────────────┐
-│  DingTalk API   │ ◄─────────────────► │  Clawdbot Plugin │
+│  DingTalk API   │ ◄─────────────────► │  OpenClaw Plugin │
 │  (Stream Mode)  │                     │  (This Plugin)   │
 └─────────────────┘                     └──────────────────┘
                                                │
                                                ▼
                                         ┌──────────────────┐
-                                        │  Clawdbot Agent  │
+                                        │  OpenClaw Agent  │
                                         │  (AI Processing) │
                                         └──────────────────┘
 ```

@@ -64,7 +64,7 @@ export interface DingTalkChannelConfig {
 }
 
 // Full config interface
-export interface ClawdbotConfig {
+export interface OpenClawConfig {
   channels?: {
     [CHANNEL_ID]?: DingTalkChannelConfig;
     defaults?: {
@@ -113,7 +113,7 @@ export const DingTalkConfigSchema = {
 };
 
 // Helper functions
-export function listDingTalkAccountIds(cfg: ClawdbotConfig): string[] {
+export function listDingTalkAccountIds(cfg: OpenClawConfig): string[] {
   const channelConfig = cfg.channels?.[CHANNEL_ID];
   if (!channelConfig) return [];
 
@@ -138,7 +138,7 @@ export function listDingTalkAccountIds(cfg: ClawdbotConfig): string[] {
 }
 
 export function resolveDingTalkAccount(opts: {
-  cfg: ClawdbotConfig;
+  cfg: OpenClawConfig;
   accountId?: string;
 }): ResolvedDingTalkAccount {
   const { cfg, accountId = DEFAULT_ACCOUNT_ID } = opts;
@@ -197,7 +197,7 @@ export function resolveDingTalkAccount(opts: {
   };
 }
 
-export function resolveDefaultDingTalkAccountId(cfg: ClawdbotConfig): string {
+export function resolveDefaultDingTalkAccountId(cfg: OpenClawConfig): string {
   const accountIds = listDingTalkAccountIds(cfg);
   return accountIds.includes(DEFAULT_ACCOUNT_ID)
     ? DEFAULT_ACCOUNT_ID
@@ -212,10 +212,10 @@ export function normalizeAccountId(accountId?: string): string {
 }
 
 export function setAccountEnabledInConfig(opts: {
-  cfg: ClawdbotConfig;
+  cfg: OpenClawConfig;
   accountId: string;
   enabled: boolean;
-}): ClawdbotConfig {
+}): OpenClawConfig {
   const { cfg, accountId, enabled } = opts;
   const channelConfig = cfg.channels?.[CHANNEL_ID] || {};
 
@@ -253,9 +253,9 @@ export function setAccountEnabledInConfig(opts: {
 }
 
 export function deleteAccountFromConfig(opts: {
-  cfg: ClawdbotConfig;
+  cfg: OpenClawConfig;
   accountId: string;
-}): ClawdbotConfig {
+}): OpenClawConfig {
   const { cfg, accountId } = opts;
   const channelConfig = cfg.channels?.[CHANNEL_ID];
 
@@ -292,10 +292,10 @@ export function deleteAccountFromConfig(opts: {
 }
 
 export function applyAccountNameToConfig(opts: {
-  cfg: ClawdbotConfig;
+  cfg: OpenClawConfig;
   accountId: string;
   name?: string;
-}): ClawdbotConfig {
+}): OpenClawConfig {
   const { cfg, accountId, name } = opts;
   if (!name) return cfg;
 

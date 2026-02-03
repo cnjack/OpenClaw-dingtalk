@@ -1,5 +1,5 @@
 import { DWClient } from "dingtalk-stream";
-import { getDingTalkRuntime, type ClawdbotCoreRuntime } from "./runtime.js";
+import { getDingTalkRuntime, type OpenClawCoreRuntime } from "./runtime.js";
 import {
   CHANNEL_ID,
   DEFAULT_ACCOUNT_ID,
@@ -11,7 +11,7 @@ import {
   setAccountEnabledInConfig,
   deleteAccountFromConfig,
   applyAccountNameToConfig,
-  type ClawdbotConfig,
+  type OpenClawConfig,
   type ResolvedDingTalkAccount,
 } from "./schema.js";
 
@@ -19,10 +19,10 @@ import {
 // Plugin API Types
 // ============================================================================
 
-interface ClawdbotPluginApi {
-  config: ClawdbotConfig;
+interface OpenClawPluginApi {
+  config: OpenClawConfig;
   logger: Console;
-  runtime: ClawdbotCoreRuntime;
+  runtime: OpenClawCoreRuntime;
   registerChannel(opts: { plugin: ChannelPlugin }): void;
   registerService?(service: unknown): void;
 }
@@ -61,8 +61,8 @@ interface Dispatcher {
 
 interface GatewayContext {
   account: ResolvedDingTalkAccount;
-  cfg: ClawdbotConfig;
-  runtime: ClawdbotCoreRuntime;
+  cfg: OpenClawConfig;
+  runtime: OpenClawCoreRuntime;
   abortSignal?: AbortSignal;
   log?: {
     info: (msg: string) => void;
@@ -94,17 +94,17 @@ interface ChannelPlugin {
   reload: { configPrefixes: string[] };
   configSchema: typeof DingTalkConfigSchema;
   config: {
-    listAccountIds: (cfg: ClawdbotConfig) => string[];
-    resolveAccount: (cfg: ClawdbotConfig, accountId?: string) => ResolvedDingTalkAccount;
-    defaultAccountId: (cfg: ClawdbotConfig) => string;
-    setAccountEnabled: (opts: { cfg: ClawdbotConfig; accountId: string; enabled: boolean }) => ClawdbotConfig;
-    deleteAccount: (opts: { cfg: ClawdbotConfig; accountId: string }) => ClawdbotConfig;
+    listAccountIds: (cfg: OpenClawConfig) => string[];
+    resolveAccount: (cfg: OpenClawConfig, accountId?: string) => ResolvedDingTalkAccount;
+    defaultAccountId: (cfg: OpenClawConfig) => string;
+    setAccountEnabled: (opts: { cfg: OpenClawConfig; accountId: string; enabled: boolean }) => OpenClawConfig;
+    deleteAccount: (opts: { cfg: OpenClawConfig; accountId: string }) => OpenClawConfig;
     isConfigured: (account: ResolvedDingTalkAccount) => boolean;
     describeAccount: (account: ResolvedDingTalkAccount) => Record<string, unknown>;
   };
   security?: {
     resolveDmPolicy: (opts: {
-      cfg: ClawdbotConfig;
+      cfg: OpenClawConfig;
       accountId?: string;
       account: ResolvedDingTalkAccount;
     }) => {
@@ -118,7 +118,7 @@ interface ChannelPlugin {
     stripPatterns: () => string[];
   };
   groups?: {
-    resolveRequireMention: (opts: { cfg: ClawdbotConfig; accountId?: string }) => boolean;
+    resolveRequireMention: (opts: { cfg: OpenClawConfig; accountId?: string }) => boolean;
   };
   messaging?: {
     normalizeTarget: (target: string) => string;
@@ -129,9 +129,9 @@ interface ChannelPlugin {
   };
   setup?: {
     resolveAccountId: (opts: { accountId?: string }) => string;
-    applyAccountName: (opts: { cfg: ClawdbotConfig; accountId: string; name?: string }) => ClawdbotConfig;
+    applyAccountName: (opts: { cfg: OpenClawConfig; accountId: string; name?: string }) => OpenClawConfig;
     validateInput: (opts: { accountId: string; input: SetupInput }) => string | null;
-    applyAccountConfig: (opts: { cfg: ClawdbotConfig; accountId: string; input: SetupInput }) => ClawdbotConfig;
+    applyAccountConfig: (opts: { cfg: OpenClawConfig; accountId: string; input: SetupInput }) => OpenClawConfig;
   };
   outbound: {
     deliveryMode: "direct";
@@ -200,7 +200,7 @@ const meta = {
 // Store plugin runtime reference
 // ============================================================================
 
-let pluginRuntime: ClawdbotPluginApi | null = null;
+let pluginRuntime: OpenClawPluginApi | null = null;
 
 // ============================================================================
 // DingTalk Channel Plugin
@@ -655,7 +655,7 @@ const plugin = {
   name: "DingTalk Channel",
   description: "DingTalk channel plugin (Stream mode)",
 
-  register(api: ClawdbotPluginApi) {
+  register(api: OpenClawPluginApi) {
     pluginRuntime = api;
     api.registerChannel({ plugin: dingtalkPlugin });
   },

@@ -1,8 +1,8 @@
 import { DWClient } from "dingtalk-stream";
 import axios from "axios";
 
-// Types for Clawdbot core runtime (obtained from pluginRuntime)
-export interface ClawdbotCoreRuntime {
+// Types for OpenClaw core runtime (obtained from pluginRuntime)
+export interface OpenClawCoreRuntime {
   channel: {
     routing: {
       resolveAgentRoute: (opts: {
