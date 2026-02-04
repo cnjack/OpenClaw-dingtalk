@@ -2,6 +2,8 @@
 
 An OpenClaw channel plugin for DingTalk (钉钉) using **Stream Mode** for seamless integration.
 
+> version `1.0.10` support the openclaw now.
+
 ## Features
 
 - **Stream Mode**: Uses WebSocket for real-time message receiving (no public IP required)
