@@ -1,5 +1,3 @@
-import type { z } from "zod";
-
 // Channel ID
 export const CHANNEL_ID = "moltbot-dingtalk-stream";
 export const DEFAULT_ACCOUNT_ID = "default";

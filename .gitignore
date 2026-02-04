@@ -1,1 +1,4 @@
 node_modules/
+
+# build output (no longer used; kept ignored to avoid accidental commits)
+dist/

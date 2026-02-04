@@ -1,18 +1,35 @@
 {
   "name": "moltbot-dingtalk-stream",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "DingTalk custom channel plugin for Moltbot/OpenClaw",
-  "main": "dist/index.js",
+  "type": "module",
   "openclaw": {
     "extensions": [
-      "./dist/index.js"
-    ]
+      "./index.ts"
+    ],
+    "channel": {
+      "id": "moltbot-dingtalk-stream",
+      "label": "DingTalk",
+      "selectionLabel": "DingTalk Bot (Stream)",
+      "docsPath": "/channels/dingtalk",
+      "docsLabel": "dingtalk",
+      "blurb": "DingTalk bot channel plugin (Stream mode)",
+      "aliases": [
+        "dt",
+        "ding",
+        "dingtalk"
+      ],
+      "order": 100
+    },
+    "install": {
+      "npmSpec": "moltbot-dingtalk-stream",
+      "localPath": "extensions/moltbot-dingtalk-stream",
+      "defaultChoice": "npm"
+    }
   },
-  "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "prepublishOnly": "npm run build"
+    "typecheck": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch"
   },
   "keywords": [
     "moltbot",

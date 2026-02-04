@@ -22,7 +22,9 @@ openclaw plugins install moltbot-dingtalk-stream
 ```bash
 git clone https://github.com/your-repo/moltbot-dingtalk-stream.git
 cd moltbot-dingtalk-stream
-npm install && npm run build
+npm install
+# optional: typecheck only (no JS build)
+npm run typecheck
 cp -r . ~/.openclaw/extensions/moltbot-dingtalk-stream
 openclaw gateway restart
 ```

@@ -1,5 +1,5 @@
 import { DWClient } from "dingtalk-stream";
-import { getDingTalkRuntime, type OpenClawCoreRuntime } from "./runtime.js";
+import { getDingTalkRuntime, type OpenClawCoreRuntime } from "./runtime.ts";
 import {
   CHANNEL_ID,
   DEFAULT_ACCOUNT_ID,
@@ -13,7 +13,7 @@ import {
   applyAccountNameToConfig,
   type OpenClawConfig,
   type ResolvedDingTalkAccount,
-} from "./schema.js";
+} from "./schema.ts";
 
 // ============================================================================
 // Plugin API Types
@@ -542,7 +542,7 @@ export const dingtalkPlugin: ChannelPlugin = {
               storePath,
               sessionKey: route.sessionKey,
               ctx: finalizedCtx,
-              onRecordError: (err) => {
+              onRecordError: (err: unknown) => {
                 log?.error?.(`[${accountId}] Failed to record session: ${String(err)}`);
               },
             });
@@ -586,7 +586,7 @@ export const dingtalkPlugin: ChannelPlugin = {
             cfg,
             dispatcherOptions: {
               deliver: deliverDingTalkReply,
-              onError: (err, info) => {
+              onError: (err: unknown, info: { kind: string }) => {
                 log?.error?.(`[${accountId}] DingTalk ${info.kind} reply failed: ${String(err)}`);
               },
             },
